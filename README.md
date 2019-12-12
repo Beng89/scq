@@ -1,0 +1,1 @@
+scq is a library for implmenting the cqrs pattern without a lot of boilerplate and over head.
