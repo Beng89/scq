@@ -10,3 +10,4 @@ tsconfig.json
 *.spec.js
 *.spec.js.map
 .DS_Store
+LICENSE
