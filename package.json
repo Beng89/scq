@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "mocha dist/index.spec.js"
+    "test": "mocha dist/index.spec.js",
+    "build": "tsc -p ."
   },
   "repository": {
     "type": "git",
