@@ -1,0 +1,12 @@
+node_modules
+src
+examples
+.gitattributes
+.git
+.gitignore
+.npmignore
+tsconfig.json
+*.spec.d.ts
+*.spec.js
+*.spec.js.map
+.DS_Store

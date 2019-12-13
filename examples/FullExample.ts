@@ -1,11 +1,3 @@
-A library for implmenting the cqrs pattern without a lot of boilerplate and over head.
-
-## How do I use it?
-
-Here is an example that extends the CModel class and implements the apply method.
-
-[FullExample](./examples/FullExample.ts)
-```typescript
 import { CModel, CEvent, CError, CResult, ValidationChain } from "scq"
 
 // An error w/ a rule
@@ -82,4 +74,3 @@ export function renameModel(actor: Subject, model: WithName, newName: string, wh
 
   return result
 }
-```
