@@ -1,6 +1,6 @@
 {
   "name": "scq",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A library for implmenting the cqrs pattern without a lot of boilerplate and over head.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
