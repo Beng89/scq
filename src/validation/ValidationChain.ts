@@ -3,10 +3,7 @@ import { CError } from "../core/CError"
 export class ValidationChain {
 
   static createRuleFromCtor(Ctor: { new(): CError }, test: () => boolean): ReturnType<typeof ValidationChain["createRule"]> {
-    return {
-      test,
-      makeError: () => new Ctor()
-    }
+    return ValidationChain.createRule(() => new Ctor(), test);
   }
   static createRule(makeError: () => CError, test: () => boolean) {
     return {

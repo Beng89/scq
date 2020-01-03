@@ -36,7 +36,7 @@ export function testValidationChain() {
         const rule1 = ValidationChain.createRuleFromCtor(SimpleError, () => false)
         const rule2 = ValidationChain.createRuleFromCtor(SimpleError, () => false)
 
-        const errors = ValidationChain.validate([rule1, rule2])
+        const errors = ValidationChain.validate(rule1, rule2)
         expect(errors)
           .to.be.an("array")
           .that.is.empty
@@ -45,7 +45,7 @@ export function testValidationChain() {
         const rule1 = ValidationChain.createRuleFromCtor(SimpleError, () => true)
         const rule2 = ValidationChain.createRuleFromCtor(SimpleError, () => true)
 
-        const errors = ValidationChain.validate([rule1, rule2])
+        const errors = ValidationChain.validate(rule1, rule2)
         expect(errors)
           .to.be.an("array")
           .that.has.length(2)

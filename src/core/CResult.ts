@@ -8,7 +8,7 @@ export class CResult {
     readonly events: ReadonlyArray<CEvent> = []
   ) { }
 
-  static fromError<TError extends CError = CError(error: Error) {
+  static fromError(error: Error) {
     return new CResult([error], [])
   }
   static fromErrors(errors: ReadonlyArray<Error>) {
