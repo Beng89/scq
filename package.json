@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "mocha dist/index.spec.js",
-    "build": "tsc -p ."
+    "build": "tsc -p .",
+    "prepublish": "rm -rf dist && npm run build"
   },
   "repository": {
     "type": "git",
