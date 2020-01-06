@@ -1,5 +1,5 @@
 import { CQGuard } from "."
-import { CQHandler, CQEventHandler } from "./Core"
+import { CQHandler, CQEventHandler, CQResult } from "./Core"
 import { RuleChain } from "./Rules"
 
 type NameOrString<TMaybeName> = TMaybeName extends { name: infer TName } ? TName
@@ -19,7 +19,7 @@ export function createRegistrar<THandler extends (CQHandler | CQEventHandler)>(t
   const rulesByName = new Map<string, RuleChain<any>>();
   const guardsByName = new Map<string, CQGuard>()
 
-  return Object.assign(function registrar<TReq extends Request<THandler>>(name: NameOrString<TReq>, handler: (req: TReq) => Response<THandler>) {
+  const registrar = Object.assign(function registrar<TReq extends Request<THandler>>(name: NameOrString<TReq>, handler: (req: TReq) => Response<THandler>) {
     if (typeof handler !== "function") {
       throw new Error("handler must be a function")
     } else if (typeof name !== "string" || name.length === 0) {
@@ -77,8 +77,32 @@ export function createRegistrar<THandler extends (CQHandler | CQEventHandler)>(t
       name = name.toLowerCase()
 
       return guardsByName.get(name)
+    },
+
+    async dispatch<TReq extends Request<THandler>>(name: string, req: TReq) {
+
+      const rules = registrar.findRules(name) ?? RuleChain.create<any>()
+      const guard = registrar.findGuard(name) ?? (() => new Array<string>())
+      const handler = registrar.findHandler(name) ?? false
+      if (handler === false) {
+        return CQResult.fromError(`A handler for the ${type} '${name}' does not exist`)
+      }
+
+      const errors = [
+        ...(await rules.validate(req)),
+        ...(await guard(req))
+      ]
+      if (Array.isArray(errors) && errors.length > 0) {
+        return CQResult.fromErrors(errors)
+      }
+
+      const result = await handler(req)
+
+      return result ?? CQResult.fromEvents([])
     }
   })
+
+  return registrar as Registrar<THandler>
 }
 
 export type Register<THandler extends Function> = <TReq extends Request<THandler>>(name: NameOrString<TReq>, handler: (req: TReq) => Response<THandler>) => Registered<TReq>
@@ -93,4 +117,6 @@ export type Registrar<THandler extends Function> = Register<THandler> & Readonly
   findHandler(name: string): SmartHandler<THandler> | undefined
   findGuard(name: string): CQGuard | undefined
   findRules(name: string): RuleChain<Request<THandler>> | undefined
+
+  dispatch<TReq extends Request<THandler>>(name: string, req: TReq): Promise<CQResult>
 }>

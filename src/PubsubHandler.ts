@@ -4,24 +4,26 @@ import { Registrar } from "./HandlerRegistrar"
 
 type Options = {
   pubsub: Pubsub
+
+  onErrors?: (errors?: string[]) => void
 }
 export function createPubsubHandler(registrar: Registrar<CQEventHandler>): (options: Options) => void {
 
   return options => {
-    const { pubsub } = options
+    const { pubsub, onErrors } = options
+
+    const handleErrors = onErrors ?? (() => { })
 
     pubsub.subscribeToAll(async event => {
       const { name } = event
 
-      const guard = registrar.findGuard(name) ?? (() => [])
-      const handler = registrar.findHandler(name) ?? false
-      if (handler === false) {
-        return
-      }
-
-      const errors = await guard(event)
-      if (errors.length === 0) {
-        await handler(event)
+      try {
+        const result = await registrar.dispatch(name, event)
+        if (result?.errors) {
+          handleErrors(result.errors)
+        }
+      } catch (err) {
+        handleErrors([`${err.name}: ${err.message}`])
       }
     })
   }
