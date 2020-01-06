@@ -8,7 +8,7 @@ export type EventQueryBuilder<TEvent extends CQEvent<string>> = Readonly<{
 
   build(): EventQuery<TEvent>
 }>
-export function createEventQueryBuilder<TEvent extends CQEvent<string>>() {
+export function createEventQueryBuilder<TEvent extends CQEvent<string>>(): EventQueryBuilder<TEvent> {
 
   function factory(query: EventQuery<TEvent>): EventQueryBuilder<TEvent> {
 
