@@ -1,76 +1,103 @@
-import { CModel, CEvent, CError, CResult, ValidationChain } from "scq"
+import * as express from "express"
+import { json } from "body-parser";
+import { createIndex, createMongooseEventStore, createLocalPubsub, withEvents, withQueries, withCommands, CommandHandler, CQResult, createEvent, CQEvent, EventHandler, QueryHandler, createEventQueryBuilder } from "../src"
 
-// An error w/ a rule
-class InvalidName extends CError {
+const validColors = new Set<string>([
+  "red",
+  "green",
+  "blue"
+])
+type DoSillyThing = {
+  color: string
+};
+CommandHandler<DoSillyThing>("DoSillyThing", req => {
 
-  constructor() {
-    super(InvalidName.name, "A valid name must be a string that is more than 4 characters in length.")
-  }
+  const happened = createEvent<SillyThingHappened>("SillyThingHappened", req)
 
-  static test(name: string) {
-    return (
-      typeof name !== "string"
-      || name.length < 4
-    )
-  }
-}
+  return CQResult.fromEvent(happened)
+}).withRules(rules => rules
+  .addRule(`color must be one of [${Array.from(validColors).join(", ")}]`, req => validColors.has(req?.color)))
 
-// An event that can occur
-interface NameChanged extends CEvent<"NameChanged"> {
-  readonly newName: string
+type SillyThingHappened = CQEvent<"SillyThingHappened"> & {
+  color: string
+};
+EventHandler<SillyThingHappened>("SillyThingHappened", event => {
 
-  readonly changedBy: string
-}
+  console.info(`A silly thing happend with the color ${event.color}.`)
+})
 
-// A model
-class WithName extends CModel {
-  name: string
+type FindSillyThingEvents = {
+  skip?: number
+  take?: number
 
-  apply(event: CEvent) {
-    switch (event.eventName) {
+  color?: string
+};
+QueryHandler<FindSillyThingEvents>("FindSillyThingEvents", async req => {
 
-      case "NameChanged":
-        const changed = event as NameChanged
-        this.name = changed.newName
+  const query = createEventQueryBuilder<SillyThingHappened>()
+    .setSkip(req.skip)
+    .setTake(req.take)
+    .setProperty("color", req.color)
+    .build()
 
-        return event
+  const events = await store.query(query)
 
-      default:
-        return event
-    }
-  }
-}
+  return CQResult.fromEvents(events)
+})
 
-// A subject
-class Subject {
-  id: string
+/////////
+// App //
+/////////
 
-  rename(model: WithName, newName: string, when: Date): CResult {
-    const errors = ValidationChain.validate(
-      ValidationChain.createRuleFromCtor(InvalidName, () => InvalidName.test(newName))
-    )
+const store = createMongooseEventStore({
+  connectionString: "mongodb://root:password@localhost:27017/eccom?authSource=admin&w=1",
+  indices: [
+    createIndex<SillyThingHappened>({
+      color: "asc"
+    })
+  ]
+})
+const pubsub = createLocalPubsub({
 
-    return errors.length > 0 ? CResult.fromErrors(errors)
-      : CResult.fromEvent(model.apply({
-        eventId: "event1",
-        eventName: "NameChanged",
-        eventOccurredAt: when,
+})
+const app = express()
 
-        changedBy: this.id,
-        newName
-      } as NameChanged))
-  }
-}
+// Commands
 
-export function renameModel(actor: Subject, model: WithName, newName: string, when: Date) {
+// To load command handlers from directory: 
+// loadHandlers({
+//   directory: resolve(__dirname, "commands")
+// })
+app.post("/commands/:commandName", json(), withCommands({
+  paramName: "commandName",
 
-  const result = actor.rename(model, newName, when)
+  store,
+  pubsub
+}))
 
-  if (result.errors.length > 0) {
-    console.info("Failed to rename model:", result.errors)
-  } else {
-    console.info(`Successfully renamed model to ${model.name}.`)
-  }
+// Queries
 
-  return result
-}
+// To load query handlers from directory:
+// loadHandlers({
+//   directory: resolve(__dirname, "queries")
+// })
+app.post("/queries/:queryName", json(), withQueries({
+  paramName: "queryName",
+
+  // it is important that if you add a store or pubsub to the queries that you add a filter too.
+  // otherwise you will end up saving or processing your events again.
+}))
+
+// Events
+
+// To load event handlers from directory:
+// loadHandlers({
+//   directory: resolve(__dirname, "events")
+// })
+withEvents({
+  pubsub
+})
+
+// Start it up!
+app.listen(3000,
+  () => console.info(`server is available at http://localhost:3000`))
