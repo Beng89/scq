@@ -86,7 +86,10 @@ export function createMongooseEventStore(opts: Options): EventStore {
         skip: typeof skip === "number" && !isNaN(skip) ? skip
           : undefined,
         take: typeof take === "number" && !isNaN(take) ? take
-          : undefined
+          : undefined,
+        sort: {
+          when: 1
+        }
       })) as TDoc[]
 
       return events
