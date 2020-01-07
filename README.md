@@ -1,8 +1,41 @@
 A library and framework for implmenting the cqrs pattern without a lot of boilerplate and over head.
 
+## Vscode snippets
+
+These snippets will make your life easier! Add them to your user snippets and start hacking away!
+
+### Command:
+
+This snippet will allow you to rapidly create a command, event and command handler
+
+```json
+"command-handler": {
+  "prefix": "command",
+  "description": "Created a command handler",
+  "body": [
+    "import { CQEvent, CommandHandler, CQResult, createEvent } from \"scq\"",
+    "",
+    "export type $2 = CQEvent<\"$2\"> & $1",
+    "export type $1 = {",
+    "\t$4",
+    "};",
+    "",
+    "CommandHandler<$1>(\"$1\", req => {",
+    "",
+    "\tconst $3 = createEvent<$2>(\"$2\", req)",
+    "",
+    "\treturn CQResult.fromEvents([$3])",
+    "}).withRules(rules => rules$0)",
+    ""
+  ]
+}
+```
+
+___
+
 ## How do I use it?
 
-Here is an example that extends the CModel class and implements the apply method.
+For simplicity sake, here is a mostly complete sample.
 
 [FullExample](./examples/FullExample.ts)
 ```typescript
@@ -110,3 +143,4 @@ withEvents({
 app.listen(3000,
   () => console.info(`server is available at http://localhost:3000`))
 ```
+
