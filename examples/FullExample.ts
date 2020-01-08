@@ -1,6 +1,6 @@
 import * as express from "express"
 import { json } from "body-parser";
-import { createIndex, createMongooseEventStore, createLocalPubsub, withEvents, withQueries, withCommands, CommandHandler, CQResult, createEvent, CQEvent, EventHandler, QueryHandler, createEventQueryBuilder } from "../src"
+import { createIndex, createMongooseEventStore, createLocalPubsub, withEvents, withQueries, withCommands, CommandHandler, CQResult, createEvent, CQEvent, EventHandler, QueryHandler, createEventQueryBuilder, createRule, Rule } from "../src"
 
 const validColors = new Set<string>([
   "red",
@@ -10,13 +10,19 @@ const validColors = new Set<string>([
 type DoSillyThing = {
   color: string
 };
+const colorMustBeValid: Rule<DoSillyThing> = ({ color }) => {
+  if (validColors.has(color)) {
+    return []
+  }
+
+  return [`color must be one of [${Array.from(validColors).join(", ")}]`]
+}
 CommandHandler<DoSillyThing>("DoSillyThing", req => {
 
   const happened = createEvent<SillyThingHappened>("SillyThingHappened", req)
 
   return CQResult.fromEvent(happened)
-}).withRules(rules => rules
-  .addRule(`color must be one of [${Array.from(validColors).join(", ")}]`, req => validColors.has(req?.color)))
+}).withRule(colorMustBeValid)
 
 type SillyThingHappened = CQEvent<"SillyThingHappened"> & {
   color: string
@@ -100,4 +106,9 @@ withEvents({
 
 // Start it up!
 app.listen(3000,
-  () => console.info(`server is available at http://localhost:3000`))
+  () => {
+    console.info(`server is available at http://localhost:3000`)
+
+    // Since this is a test server, we exit
+    process.exit(0)
+  })

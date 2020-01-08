@@ -1,32 +1,51 @@
-export class Rule<TInput = void> {
+// Rule Tests...
+export type RuleTestResult = boolean | Promise<boolean>
+export type RuleTest<TInput = undefined> = TInput extends undefined ? () => RuleTestResult
+  : (input: TInput) => RuleTestResult;
 
-  constructor(
-    readonly satisfied: (req: TInput) => Promise<boolean> | boolean,
-    readonly getError: () => string
-  ) { }
+// Rules...
+export type RuleResult = string[] | [] | Promise<string[] | []>
+export function createRuleResult(messageOrMessages?: string | string[]): RuleResult {
+  return typeof messageOrMessages === "string" ? [messageOrMessages]
+    : Array.isArray(messageOrMessages) ? messageOrMessages
+      : []
+}
+export type Rule<TInput = undefined> = TInput extends undefined ? () => RuleResult
+  : (input: TInput) => RuleResult;
+export function createRule<TInput = undefined>(message: string, test: RuleTest<TInput>): Rule<TInput> {
+
+  return (async (input: TInput) => {
+    const didPass = await test(input)
+
+    return didPass === true ? createRuleResult()
+      : createRuleResult(message)
+  }) as Rule<TInput>
 }
 
+// Rule Chains...
 export class RuleChain<TInput = void> {
 
   private constructor(
     readonly rules: Rule<TInput>[] = []
   ) { }
 
-  public addRule(message: string, satisfied: (req: TInput) => Promise<boolean> | boolean) {
-    return new RuleChain([
-      ...this.rules,
-      new Rule(satisfied, () => message)
-    ])
+  addRule(rule: Rule<TInput>): RuleChain<TInput>
+  addRule(message: string, test: RuleTest<TInput>): RuleChain<TInput>
+  addRule(messageOrRule: string | Rule<TInput>, testOrUndefined?: RuleTest<TInput>) {
+
+    const rule = typeof messageOrRule === "function" ? messageOrRule
+      : createRule<TInput>(messageOrRule, testOrUndefined)
+
+    return new RuleChain(this.rules.concat(rule))
   }
 
   public validate(req: TInput) {
     return this.rules.reduce(async (errors, rule) => {
       const waitedErrors = await errors
 
-      const satisfied = await rule.satisfied(req)
+      const result = await rule(req)
 
-      return satisfied ? waitedErrors
-        : waitedErrors.concat(rule.getError())
+      return waitedErrors.concat(result)
     }, Promise.resolve(new Array<string>()))
   }
 

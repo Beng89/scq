@@ -43,8 +43,8 @@ export namespace CQResult {
 }
 
 // Handlers and Guards
-export type CQHandler<TReq extends object = object> = (req: TReq) => Promise<CQResult> | CQResult
-export type CQGuard<TReq extends object = object> = (req: TReq) => Promise<string[]> | string[]
+export type CQHandler<TReq = object> = (req: TReq) => Promise<CQResult> | CQResult
+export type CQGuard<TReq = object> = (req: TReq) => Promise<string[]> | string[]
 
 // Event Store
 export type EventQuery<TEvent extends CQEvent<string>> = {
@@ -72,3 +72,9 @@ export type Pubsub = {
   subscribeTo<TEvent extends CQEvent<string>>(name: TEvent["name"], handler: CQEventHandler<TEvent>): PubsubSubscription
   subscribeToAll(handler: CQEventHandler): PubsubSubscription
 }
+
+// State
+
+export type GetEvents<TInput, TEvent extends CQEvent<string>> = (req: TInput) => TEvent[] | Promise<TEvent[]>
+export type GetState<TState, TInput> = (req: TInput) => TState | Promise<TState>
+export type Reducer<TState, TEvent> = (state: TState, event: TEvent) => TState
