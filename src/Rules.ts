@@ -1,7 +1,6 @@
 // Rule Tests...
 export type RuleTestResult = boolean | Promise<boolean>
-export type RuleTest<TInput = undefined> = TInput extends undefined ? () => RuleTestResult
-  : (input: TInput) => RuleTestResult;
+export type RuleTest<TInput> = (input: TInput) => RuleTestResult
 
 // Rules...
 export type RuleResult = string[] | [] | Promise<string[] | []>
@@ -10,8 +9,7 @@ export function createRuleResult(messageOrMessages?: string | string[]): RuleRes
     : Array.isArray(messageOrMessages) ? messageOrMessages
       : []
 }
-export type Rule<TInput = undefined> = TInput extends undefined ? () => RuleResult
-  : (input: TInput) => RuleResult;
+export type Rule<TInput> = (input: TInput) => RuleResult;
 export function createRule<TInput = undefined>(message: string, test: RuleTest<TInput>): Rule<TInput> {
 
   return (async (input: TInput) => {

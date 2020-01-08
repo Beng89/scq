@@ -1,13 +1,10 @@
 import { RuleResult, RuleTestResult, createRuleResult } from "./Rules";
 
 // Stateful rule test...
-export type StatefulRuleTest<TState, TInput = undefined> = TInput extends undefined ? (state: TState) => RuleTestResult
-  : (state: TState, input: TInput) => RuleTestResult
-
+export type StatefulRuleTest<TState, TInput> = (state: TState, input: TInput) => RuleTestResult
 
 // Stateful rule...
-export type StatefulRule<TState, TInput = undefined> = TInput extends undefined ? (state: TState) => RuleResult
-  : (state: TState, input: TInput) => RuleResult
+export type StatefulRule<TState, TInput> = (state: TState, input: TInput) => RuleResult
 export function createStatefuleRule<TState, TInput = undefined>(message: string, test: StatefulRuleTest<TState, TInput>): StatefulRule<TState, TInput> {
 
   return (async (state: TState, input: TInput) => {
