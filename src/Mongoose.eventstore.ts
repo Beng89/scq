@@ -32,6 +32,7 @@ export function createMongooseEventStore(opts: Options): EventStore {
     when: Date,
   }, {
     strict: false,
+    useNestedStrict: false,
     _id: false,
     id: false
   })
@@ -66,23 +67,21 @@ export function createMongooseEventStore(opts: Options): EventStore {
 
   return {
     async append<TEvent extends CQEvent<string>>(eventOrEvents: TEvent | TEvent[]) {
-      type TDoc = TEvent & mongoose.Document
-
       let events = Array.isArray(eventOrEvents) ? eventOrEvents
         : [eventOrEvents]
 
-      events = (await EventModel.insertMany(events)) as TDoc[]
+      const docs = (await EventModel.insertMany(events))
+
+      events = docs.map(doc => doc.toObject())
 
       return Array.isArray(eventOrEvents) ? events
         : events[0]
     },
 
     async query<TEvent extends CQEvent<string>>(query: EventQuery<TEvent>) {
-      type TDoc = TEvent & mongoose.Document
-
       const { skip, take, properties } = query
 
-      const events = (await EventModel.find(properties, null, {
+      const docs = (await EventModel.find(properties, null, {
         skip: typeof skip === "number" && !isNaN(skip) ? skip
           : undefined,
         take: typeof take === "number" && !isNaN(take) ? take
@@ -90,9 +89,9 @@ export function createMongooseEventStore(opts: Options): EventStore {
         sort: {
           when: 1
         }
-      })) as TDoc[]
+      }))
 
-      return events
+      return docs.map(doc => doc.toObject())
     }
   }
 }
