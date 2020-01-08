@@ -5,7 +5,7 @@ export type StatefulRuleTest<TState, TInput> = (state: TState, input: TInput) =>
 
 // Stateful rule...
 export type StatefulRule<TState, TInput> = (state: TState, input: TInput) => RuleResult
-export function createStatefuleRule<TState, TInput = undefined>(message: string, test: StatefulRuleTest<TState, TInput>): StatefulRule<TState, TInput> {
+export function createStatefulRule<TState, TInput = undefined>(message: string, test: StatefulRuleTest<TState, TInput>): StatefulRule<TState, TInput> {
 
   return (async (state: TState, input: TInput) => {
     const didPass = await test(state, input)
@@ -27,7 +27,7 @@ export class StatefulRuleChain<TState, TInput = void> {
   addRule(messageOrRule: string | StatefulRule<TState, TInput>, testOrUndefined?: StatefulRuleTest<TState, TInput>) {
 
     const rule = typeof messageOrRule === "function" ? messageOrRule
-      : createStatefuleRule<TState, TInput>(messageOrRule, testOrUndefined)
+      : createStatefulRule<TState, TInput>(messageOrRule, testOrUndefined)
 
     return new StatefulRuleChain(this.rules.concat(rule))
   }
