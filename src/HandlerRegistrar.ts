@@ -20,7 +20,20 @@ type AddRule = (name: string, rule: Rule<any>) => void
 type SetTestState = (name: string, stateType: string, test: TestState<any>) => void
 
 function createNameTypeKey(name: string, type: string) {
+  if (name?.includes(":")) {
+    throw new Error(`name ${name} includes an illegal character ':'.`)
+  } else if (type?.includes(":")) {
+    throw new Error(`stateType ${type} includes an illegal character ':'.`)
+  }
+
   return `${name}:${type}`
+}
+function createPartialNameTypeKey(name: string) {
+  if (name?.includes(":")) {
+    return false
+  }
+
+  return `${name?.toLowerCase()}:`
 }
 
 export type Registrar<THandler extends Function> = Register<THandler> & Readonly<{
@@ -29,6 +42,7 @@ export type Registrar<THandler extends Function> = Register<THandler> & Readonly
   findHandler(name: string): SmartHandler<THandler> | undefined
   findGuard(name: string): CQGuard<any> | undefined
   findRules(name: string): RuleChain<Request<THandler>> | undefined
+  findStateTestsByName(name: string): TestState<any>[]
 
   dispatch(name: string, req: Request<THandler>): Promise<CQResult>
 }>
@@ -36,7 +50,7 @@ export function createRegistrar<THandler extends (CQHandler | CQEventHandler)>(t
 
   const handlersByName = new Map<string, SmartHandler<THandler>>()
   const rulesByName = new Map<string, RuleChain<any>>()
-  const testStateByKey = new Map<string, TestState<any>>()
+  const stateTestsByKey = new Map<string, TestState<any>>()
   const guardsByName = new Map<string, CQGuard<any>>()
 
   const setHandler = (name: string, handler: SmartHandler<THandler>) => {
@@ -62,7 +76,7 @@ export function createRegistrar<THandler extends (CQHandler | CQEventHandler)>(t
 
     const key = createNameTypeKey(name, type)
 
-    testStateByKey.set(key, rule)
+    stateTestsByKey.set(key, rule)
   }
 
   const registrar = Object.assign(function registrar<TInput extends Request<THandler>>(name: NameOrString<TInput>, handler: (req: TInput) => Response<THandler>) {
@@ -99,19 +113,40 @@ export function createRegistrar<THandler extends (CQHandler | CQEventHandler)>(t
 
       return guardsByName.get(name)
     },
+    findStateTestsByName(name: string) {
+
+      const keyOrFalse = createPartialNameTypeKey(name)
+      if (keyOrFalse !== false) {
+        return Array.from(stateTestsByKey)
+          .filter(([key]) => key.startsWith(keyOrFalse))
+          .map(([_, test]) => test)
+      }
+
+      return []
+    },
 
     async dispatch<TReq extends Request<THandler>>(name: string, req: TReq) {
 
       const rules = registrar.findRules(name) ?? RuleChain.create<any>()
       const guard = registrar.findGuard(name) ?? (() => new Array<string>())
       const handler = registrar.findHandler(name) ?? false
+      const stateTests = registrar.findStateTestsByName(name)
       if (handler === false) {
         return CQResult.fromError(`A handler for the ${type} '${name}' does not exist`)
       }
 
+
       const errors = [
         ...(await rules.validate(req)),
-        ...(await guard(req))
+        ...(await guard(req)),
+        ...(await stateTests.reduce(
+          async (errors, test) => {
+            const waitedErrors = await errors
+
+            const results = await test(req)
+
+            return waitedErrors.concat(results)
+          }, Promise.resolve(new Array<string>())))
       ]
       if (Array.isArray(errors) && errors.length > 0) {
         return CQResult.fromErrors(errors)
@@ -154,10 +189,17 @@ function createRegistered<TInput>(name: string, setGuard: SetGuard, addRule: Add
     },
 
     withState<TState>(stateType: string, getState: GetState<TState, TInput>) {
+      if (stateType?.includes(":")) {
+        throw new Error("stateType may not include ':' characters")
+      }
 
       return createRegisteredWithState<TState, TInput>(name, stateType, getState, this, setStateTest)
     },
     withReducedState<TState, TEvent extends CQEvent<string>>(stateType: string, reduce: Reducer<TState, TEvent>, getEvents: GetEvents<TInput, TEvent>) {
+      if (stateType?.includes(":")) {
+        throw new Error("stateType may not include ':' characters")
+      }
+
       const getState: GetState<TState, TInput> = async input => {
 
         const events = await Promise.resolve(getEvents(input))
