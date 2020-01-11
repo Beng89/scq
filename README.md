@@ -17,7 +17,7 @@ This snippet will allow you to rapidly create a command, event and command handl
     "",
     "export type $2 = CQEvent<\"$2\"> & $1",
     "export type $1 = {",
-    "\t$4",
+    "\t$0",
     "};",
     "",
     "CommandHandler<$1>(\"$1\", req => {",
@@ -25,7 +25,7 @@ This snippet will allow you to rapidly create a command, event and command handl
     "\tconst $3 = createEvent<$2>(\"$2\", req)",
     "",
     "\treturn CQResult.fromEvents([$3])",
-    "}).withRules(rules => rules$0)",
+    "})",
     ""
   ]
 }
