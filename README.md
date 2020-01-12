@@ -31,6 +31,28 @@ This snippet will allow you to rapidly create a command, event and command handl
 }
 ```
 
+### Events:
+
+This snippet will allow you to easily create an aggregated event type
+
+```json
+"events": {
+  "prefix": "events",
+  "description": "Creates a set of events",
+  "body": [
+    "export type $1Event = (",
+    "\t",
+    ")",
+    "export type $1EventProperty = (",
+    "\t",
+    ")",
+    "export const $1EventNames: ReadonlyArray<$1Event[\"name\"]> = [",
+    "\t",
+    "]"
+  ]
+}
+```
+
 ___
 
 ## How do I use it?
