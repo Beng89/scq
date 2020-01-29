@@ -1,6 +1,6 @@
 import { CQGuard } from "."
 import { CQHandler, CQEventHandler, CQResult, GetState, GetEvents, CQEvent, Reducer } from "./Core"
-import { RuleChain, RuleTest, Rule } from "./Rules"
+import { RuleChain, Rule } from "./Rules"
 import { StatefulRuleChain, StatefulRule } from "./StatefulRule"
 
 type NameOrString<TMaybeName> = TMaybeName extends { name: infer TName } ? TName
