@@ -1,6 +1,8 @@
 import * as express from "express"
 import { json } from "body-parser";
-import { createIndex, createMongooseEventStore, createLocalPubsub, withEvents, withQueries, withCommands, CommandHandler, CQResult, createEvent, CQEvent, EventHandler, QueryHandler, createEventQueryBuilder, createRule, Rule } from "../src"
+import { createLocalPubsub, withEvents, CommandHandler, CQResult, createEvent, CQEvent, EventHandler, QueryHandler, createEventQueryBuilder, Rule } from "../src"
+import { createIndex, createMongooseEventStore } from "../mongoose"
+import { withQueries, withCommands } from "../express"
 
 const validColors = new Set<string>([
   "red",
